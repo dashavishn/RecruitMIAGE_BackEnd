@@ -1,23 +1,23 @@
-// Importation des modules necessaires
 const express = require("express");
+const bodyParser = require('body-parser');
 const path = require('path');
 const mysql = require("mysql");
 const dotenv = require("dotenv");
 
-// Chargement des variables d'environnement depuis le fichier .env
-dotenv.config({ path: './.env'});
-
-// Création de l'application Express
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Middleware pour gérer les en-têtes CORS
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    res.header('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     next();
 });
+
+// Chargement des variables d'environnement depuis le fichier .env
+dotenv.config({ path: './.env' });
 
 // Configuration de la connexion à la base de données MySQL
 const db = mysql.createConnection({
@@ -27,32 +27,46 @@ const db = mysql.createConnection({
     database: process.env.DATABASE
 });
 
+// Connexion à la base de données MySQL
+db.connect((error) => {
+    if (error) {
+        console.error('Erreur de connexion à la base de données :', error);
+        return;
+    }
+    console.log("Connexion à la base de données MySQL réussie...");
+});
+
 // Définition du répertoire des fichiers statiques (CSS, images, etc.)
 const publicDirectory = path.join(__dirname, './public');
 app.use(express.static(publicDirectory));
 
-// Middleware pour analyser les corps encodés en URL (envoyés par les formulaires HTML)
-app.use(express.urlencoded({extended: false}));
-// Middleware pour analyser les corps JSON (envoyés par les clients d'API)
-app.use(express.json());
+app.get('/', (req, res) => {
+    res.send('ça marche !');
+});
 
-// Configuration du moteur de vue Handlebars
-app.set('view engine', 'hbs');
+app.post('/register', (req, res) => {
+    // Insertion de l'utilisateur dans la base de données
+    const userData = {
+        name: req.body.nom,
+        firstname: req.body.prenom,
+        email: req.body.email,
+        username: req.body.nomuser,
+        password: req.body.mdp
+    };
 
-// Connexion à la base de données MySQL
-db.connect( (error) => {
-    if(error) {
-        console.log(error)
-    } else {
-        console.log("MYSQL Connected...")
-    }
-})
+    db.query('INSERT INTO utilisateur SET ?', userData, (error, results) => {
+        if (error) {
+            console.error('Erreur lors de l\'insertion de l\'utilisateur :', error);
+            res.status(500).json({ message: 'Erreur lors de l\'inscription de l\'utilisateur' });
+            return;
+        }
 
-//Definition Routes
-app.use('/', require('./routes/pages')) // Route pour les pages du site
-app.use('/auth', require ('./routes/auth')); // Route pour les fonctionnalites d'authentification
+        console.log('Utilisateur enregistré avec succès :', results);
+        res.status(200).json({ message: 'Utilisateur enregistré avec succès' });
+    });
+});
 
-// Démarrage du serveur sur le port 5000
-app.listen(5000, () => {
-    console.log("Server started on Port 5000");// Affiche un message lorsque le serveur démarre avec succès
-})
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Serveur démarré sur le port 3000`);
+});
