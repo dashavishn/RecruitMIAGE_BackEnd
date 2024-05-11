@@ -101,6 +101,16 @@ app.post('/create-project', (req, res) => {
     });
 });
 
+app.get('/projects', (req, res) => {
+    db.query('SELECT * FROM projects', (error, results) => {
+        if (error) {
+            res.status(500).send({ message: 'Error fetching projects', error: error.toString() });
+        } else {
+            res.status(200).json(results);
+        }
+    });
+});
+
 
 
 const PORT = process.env.PORT || 3000;
