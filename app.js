@@ -56,7 +56,7 @@ app.post('/projects/:projectId/members', async (req, res) => {
     const projectId = req.params.projectId;
 
     try {
-        const project = db.query('SELECT nbparticipants FROM projects WHERE idprojets = ?', projectId);
+        const project = db.query('SELECT nbparticipants FROM projets WHERE idprojets = ?', projectId);
         const members = db.query('SELECT COUNT(*) FROM membre WHERE idprojets = ?', [projectId]);
 
         if (project.length === 0) {
@@ -152,7 +152,7 @@ app.post('/create-project', (req, res) => {
     };
 
     // Requête SQL pour insérer le nouveau projet dans la base de données
-    const query = 'INSERT INTO projects SET ?';
+    const query = 'INSERT INTO projets SET ?';
     db.query(query, projectData, (error, results) => {
         if (error) {
             console.error('Erreur lors de l\'insertion du projet :', error);
@@ -166,7 +166,7 @@ app.post('/create-project', (req, res) => {
 });
 
 app.get('/projects', (req, res) => {
-    db.query('SELECT * FROM projects', (error, results) => {
+    db.query('SELECT * FROM projets', (error, results) => {
         if (error) {
             res.status(500).send({ message: 'Error fetching projects', error: error.toString() });
         } else {
