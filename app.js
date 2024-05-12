@@ -1,8 +1,8 @@
 const cors = require('cors');
 const express = require("express");
+const mysql = require("mysql");
 const bodyParser = require('body-parser');
 const path = require('path');
-const mysql = require("mysql");
 const dotenv = require("dotenv");
 
 
@@ -47,6 +47,70 @@ db.connect((error) => {
     }
     console.log("Connexion à la base de données MySQL réussie...");
 });
+
+// Route pour ajouter un membre à un projet
+
+app.post('/projects/:projectId/members', async (req, res) => {
+    const iduser = req.body.userId;
+    const role = req.body.role;
+    const projectId = req.params.projectId;
+
+    try {
+        const project = db.query('SELECT nbparticipants FROM projects WHERE idprojets = ?', projectId);
+        const members = db.query('SELECT COUNT(*) AS count_member FROM membre WHERE idprojets = ?', [projectId]);
+
+        if (project.length === 0) {
+            return res.status(404).send({ message: 'Projet non trouvé.' });
+        }
+
+        if (members[0].count_member >= project[0].nbparticipants) {
+            return res.status(400).send({ message: 'Le nombre maximum de participants a été atteint.' });
+        }
+
+        await db.query('INSERT INTO membre (iduser, idprojets, role) VALUES (?, ?, ?)', [iduser, projectId, 'Participant']);
+        res.status(201).send({ message: 'Inscription réussie.' });
+    } catch (error) {
+        console.error('Erreur lors de l\'ajout du membre au projet :', error);
+        res.status(500).send({ message: 'Erreur lors de l\'ajout du membre au projet', error: error.message });
+    }
+});
+
+
+// Route pour récupérer tous les membres d'un projet
+app.get('/projects/:projetId/members', (req, res) => {
+    const idprojets = req.params.idprojets;
+
+    const selectQuery = `
+        SELECT * FROM membre WHERE idprojets = ?
+    `;
+    db.query(selectQuery, [idprojets], (error, results) => {
+        if (error) {
+            console.error('Erreur lors de la récupération des membres du projet :', error);
+            res.status(500).send({ message: 'Erreur lors de la récupération des membres', error: error.toString() });
+            return;
+        }
+
+        console.log('Membres récupérés avec succès :', results);
+        res.status(200).json(results);
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Définition du répertoire des fichiers statiques (CSS, images, etc.)
 const publicDirectory = path.join(__dirname, './public');
