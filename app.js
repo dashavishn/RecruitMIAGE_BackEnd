@@ -57,13 +57,13 @@ app.post('/projects/:projectId/members', async (req, res) => {
 
     try {
         const project = db.query('SELECT nbparticipants FROM projects WHERE idprojets = ?', projectId);
-        const members = db.query('SELECT COUNT(*) AS count_member FROM membre WHERE idprojets = ?', [projectId]);
+        const members = db.query('SELECT COUNT(*) FROM membre WHERE idprojets = ?', [projectId]);
 
         if (project.length === 0) {
             return res.status(404).send({ message: 'Projet non trouvé.' });
         }
 
-        if (members[0].count_member >= project[0].nbparticipants) {
+        if (members >= project.nbparticipants) {
             return res.status(400).send({ message: 'Le nombre maximum de participants a été atteint.' });
         }
 
