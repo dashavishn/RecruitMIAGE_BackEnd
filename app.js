@@ -4,6 +4,7 @@ const mysql = require("mysql");
 const bodyParser = require('body-parser');
 const path = require('path');
 const dotenv = require("dotenv");
+const router = require("./routes/auth");
 
 
 
@@ -175,7 +176,40 @@ app.get('/projects', (req, res) => {
     });
 });
 
+// Route pour obtenir les détails d'un projet et ses membres
+app.get('/project-details/:id', async (req, res) => {
+    const projectId = req.params.id;
 
+    // Utilisez une transaction ou des requêtes séparées pour gérer les opérations de base de données
+    db.query(`SELECT * FROM projets WHERE idprojets = ?`, [projectId], (projError, projResults) => {
+        if (projError) {
+            console.error('Erreur lors de la récupération du projet :', projError);
+            return res.status(500).send({ message: 'Erreur lors de la récupération des détails du projet', error: projError });
+        }
+
+        if (projResults.length === 0) {
+            return res.status(404).send({ message: 'Projet non trouvé.' });
+        }
+
+        const project = projResults[0]; // Supposons que nous n'avons qu'un seul projet correspondant à cet ID
+
+        // Requête pour obtenir les membres associés au projet
+        db.query(`SELECT u.username, m.role FROM membre m JOIN utilisateur u ON m.iduser = u.iduser WHERE m.idprojets = ?`, [projectId], (memError, memResults) => {
+            if (memError) {
+                console.error('Erreur lors de la récupération des membres du projet :', memError);
+                return res.status(500).send({ message: 'Erreur lors de la récupération des membres', error: memError });
+            }
+
+            // Envoyez les résultats comprenant les détails du projet et les membres
+            res.status(200).send({
+                project: project,
+                members: memResults
+            });
+        });
+    });
+});
+
+module.exports = router;
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
